@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#61152d"/>
+      <stop offset="65%" stop-color="#7a2440"/>
+      <stop offset="100%" stop-color="#8a3b57"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7b042e"/>
+      <stop offset="100%" stop-color="#8a0a36"/>
+    </linearGradient>
+    <linearGradient id="prismA" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff5f86"/>
+      <stop offset="20%" stop-color="#ffba63"/>
+      <stop offset="40%" stop-color="#fff18a"/>
+      <stop offset="60%" stop-color="#91f0cc"/>
+      <stop offset="80%" stop-color="#83d4ff"/>
+      <stop offset="100%" stop-color="#e89bff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="128" fill="url(#bg)"/>
+  <rect x="26" y="26" width="972" height="972" rx="110" fill="none" stroke="#f4eadf" stroke-opacity=".45" stroke-width="4"/>
+  <rect x="72" y="72" width="880" height="880" rx="92" fill="none" stroke="#d6b178" stroke-opacity=".5" stroke-width="2"/>
+  <line x1="184" y1="548" x2="840" y2="548" stroke="#d6b178" stroke-opacity=".9" stroke-width="4"/>
+  <rect x="122" y="612" width="780" height="244" rx="58" fill="url(#panel)"/>
+  <text x="512" y="444" text-anchor="middle" font-family="Georgia, serif" font-size="332" letter-spacing="10" fill="url(#prismA)">DVD</text>
+  <text x="512" y="814" text-anchor="middle" font-family="Georgia, serif" font-size="210" letter-spacing="4" fill="url(#prismA)">Valet</text>
+</svg>

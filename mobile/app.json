@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#5f162d"
     },
     "ios": {
       "supportsTablet": true,
@@ -23,20 +23,25 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#5f162d"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.tixpy.dvdvalet",
-      "versionCode": 1
+      "versionCode": 10
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "owner": "pinataro",
+    "scheme": "dvdvalet",
     "extra": {
       "eas": {
         "projectId": "8800b34c-1af1-4f86-85d8-8ac9b532d7e3"
       }
-    }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite"
+    ]
   }
 }
