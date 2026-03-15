@@ -1,0 +1,14 @@
+# Exclude local dependencies and caches from EAS Build uploads
+node_modules
+.expo
+
+# OS cruft
+.DS_Store
+
+# Local env
+.env*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
