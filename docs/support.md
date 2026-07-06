@@ -7,23 +7,25 @@ Contact
 - GitHub Issues: https://github.com/tompinataro/DVD-Valet/issues/new/choose
 
 Account & Data Deletion Requests
-- Request URL: https://tompinataro.github.io/DVD-Valet/support#account-deletion
-- To request deletion of your account and associated data, email TixPy@pinataro.com with:
-  - Subject: "DVD Valet Account Deletion Request"
-  - The email address tied to your account
-  - Any organization/location identifiers needed to find your records
+- Request URL: See the Account & Data Deletion section on the support page you opened.
+- DVD Valet stores library data and any optional saved profile on your device.
+- To remove local data, you can clear the saved profile inside the app or delete the app from your device.
+- If you need help identifying what to remove, email TixPy@pinataro.com with:
+  - Subject: "DVD Valet Data Deletion Help"
+  - The email address saved in the optional local profile, if any
+  - Any helpful details about the library or device you want us to help identify
 
 Quick Checks
-- Server Health: Confirm the API responds at /health (see [Staging Runbook](https://tompinataro.github.io/DVD-Valet/docs/STAGING_RUNBOOK))
 - App Version: Ensure you’re on the latest build
-- Network: Verify connectivity and try again after a few minutes
+- Camera Access: If scanning is not working, confirm camera permission is enabled for DVD Valet in device settings
+- Library Refresh: If a scan does not appear right away, open the Library tab and tap Refresh
 
 Common Topics
-- Login & Accounts: Organization-managed accounts only; request access from your admin
-- Submissions: If offline, submissions will sync automatically when online
-- Location: Optional; deny permission if not required by your organization
+- Profiles: Saving a local profile is optional. Any user can open the app, scan DVDs, and build a personal library immediately.
+- Scanning UPCs: Use the Scan tab to capture DVD UPCs in batches; if codes stop saving, tap Reset and scan again
+- Library Queue: The Library tab shows queued UPCs saved on the device; tap Refresh to reload the list
+- Camera Permission: The app requests camera access only when you choose to scan; you can re-enable it later in device settings
 
 Links
-- Runbook (staging): https://tompinataro.github.io/DVD-Valet/docs/STAGING_RUNBOOK
-- Privacy Policy: https://tompinataro.github.io/DVD-Valet/privacy
-- Account Deletion Request: https://tompinataro.github.io/DVD-Valet/support#account-deletion
+- Privacy Policy: See the linked privacy page in the published support site
+- Account Deletion Request: Use the Account & Data Deletion section above

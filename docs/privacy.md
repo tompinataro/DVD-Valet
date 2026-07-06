@@ -5,14 +5,14 @@ Last updated: 2026-03-05
 DVD Valet respects your privacy. This policy explains what information we collect, how we use it, and your choices.
 
 Information We Collect
-- Account Information: Email address associated with your organization account.
-- Visit Submissions: Task checklist items and optional notes you provide for each visit.
-- Approximate Location (Optional): If you grant permission, we may collect approximate location at check-in/out to verify presence. The app works without location if you deny permission.
-- Diagnostic Information: Basic server logs (e.g., errors) to maintain reliability. We do not use third-party analytics or advertising SDKs.
+- Local Library Data: UPCs you scan and any library metadata you add (stored on your device).
+- Optional Profile Data: If you choose to save a local profile, the email address you enter is stored on your device.
+- Camera Access (Optional): Used only to scan DVD UPC barcodes so titles can be added to your library. You can deny permission and still use non-scan features.
+- Diagnostic Information: Basic error logs to maintain reliability. We do not use third-party advertising SDKs.
 
 How We Use Information
-- Provide the service (authenticate users, display routes, record visit submissions).
-- Improve reliability and support (debug issues, ensure submissions are received).
+- Provide core functionality (scan DVD UPCs, add titles to your library, manage your saved collection).
+- Improve reliability and support (debug issues, fix bugs).
 
 Sharing
 - We do not sell your data. We may share data with service providers who help us operate the service (e.g., hosting/database), under appropriate safeguards.
@@ -21,14 +21,13 @@ Security
 - All network communication uses HTTPS/TLS. Authentication tokens are stored securely on device and transmitted only over encrypted connections.
 
 Retention
-- Visit submissions are retained according to your organization’s policy. Diagnostic logs are retained only as needed to operate the service.
+- Local library data and optional local profile data remain on your device unless you delete the app or clear data. Diagnostic logs are retained only as needed to operate the service.
 
 Children’s Privacy
-- DVD Valet is intended for use by professional field technicians and is not directed to children under 13.
+- DVD Valet is intended for individual movie collectors and households and is not directed to children under 13.
 
 Your Choices
-- Location Permission: You can deny or revoke location access in your device settings; the app remains functional.
-- Account and data deletion requests: use https://tompinataro.github.io/DVD-Valet/support#account-deletion or contact support.
+- Camera Permission: You can deny or revoke camera access in your device settings; the app remains functional (non-scan screens will still work).
 
 Contact
-- Support: See our Support page at https://tompinataro.github.io/DVD-Valet/support
+- Support: Email TixPy@pinataro.com

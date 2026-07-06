@@ -1,0 +1,14 @@
+{
+  "slug": "dvd-valet",
+  "displayName": "DVD Valet",
+  "repoPath": "/Users/tompinataro/My Projects/DVD-Valet",
+  "bundleId": "com.tixpy.dvdvalet",
+  "appleAppId": "6759878534",
+  "googlePlayPackage": "com.tixpy.dvdvalet",
+  "links": {
+    "appStore": "",
+    "googlePlay": ""
+  },
+  "generatedAt": "2026-03-17T14:22:53.816Z",
+  "outDir": "/Users/tompinataro/My Projects/Canopi/control/store-metadata/apps/dvd-valet/out"
+}

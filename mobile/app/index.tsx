@@ -1,33 +1,54 @@
-import { useMemo, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-export default function HomeScreen() {
-  const [status, setStatus] = useState<'signed_out' | 'signed_in'>('signed_out');
-  const headline = useMemo(
-    () => (status === 'signed_in' ? 'Your Library' : 'Welcome to DVD Valet'),
-    [status]
-  );
+import { saveFirstName } from '../src/db';
+
+const DVD_VALET_LOGO = require('../assets/icon.png');
+
+export default function IndexScreen() {
+  const router = useRouter();
+  const [firstName, setFirstName] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleNext() {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await saveFirstName(firstName);
+      router.replace('/welcome');
+    } catch (err: any) {
+      setError(String(err?.message || err));
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.h1}>{headline}</Text>
-      <Text style={styles.p}>
-        MVP plan: Sign in → Scan UPC → Queue offline lookups → Sync to Supabase.
-      </Text>
-
+      <Image source={DVD_VALET_LOGO} style={styles.logo} resizeMode="contain" />
       <View style={styles.card}>
-        <Text style={styles.label}>Temporary status toggle (dev)</Text>
         <TextInput
-          value={status}
-          onChangeText={(t) => setStatus(t === 'signed_in' ? 'signed_in' : 'signed_out')}
+          value={firstName}
+          onChangeText={setFirstName}
           style={styles.input}
-          autoCapitalize="none"
+          autoCapitalize="words"
+          autoCorrect={false}
+          returnKeyType="next"
+          placeholder="Add your first name here..."
+          placeholderTextColor="#707084"
+          onSubmitEditing={handleNext}
         />
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <Pressable
+          onPress={handleNext}
+          style={[styles.primaryButton, submitting && styles.primaryButtonDisabled]}
+          disabled={submitting}
+        >
+          <Text style={styles.primaryButtonText}>{submitting ? 'Saving...' : 'Next'}</Text>
+        </Pressable>
       </View>
-
-      <Text style={styles.small}>
-        Next: auth screens, camera scan, local queue (SQLite), and Supabase sync.
-      </Text>
     </View>
   );
 }
@@ -35,44 +56,58 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    paddingTop: 64,
     backgroundColor: '#0b0b0f',
+    paddingHorizontal: 20,
+    paddingTop: 56,
+    justifyContent: 'center',
   },
-  h1: {
-    color: 'white',
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  p: {
-    color: '#c9c9d1',
-    fontSize: 15,
-    marginBottom: 18,
-    lineHeight: 22,
+  logo: {
+    alignSelf: 'center',
+    position: 'absolute',
+    top: 84,
+    width: 172,
+    height: 172,
   },
   card: {
     borderWidth: 1,
     borderColor: '#242431',
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 18,
+    padding: 18,
     backgroundColor: '#12121a',
-    marginBottom: 18,
-  },
-  label: {
-    color: '#9a9ab0',
-    fontSize: 12,
-    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
     borderColor: '#2d2d3e',
-    borderRadius: 10,
-    padding: 10,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 13,
     color: 'white',
+    backgroundColor: '#171722',
+    fontSize: 16,
+    marginBottom: 12,
   },
-  small: {
-    color: '#9a9ab0',
-    fontSize: 12,
+  errorText: {
+    color: '#ff9a9a',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+  primaryButton: {
+    alignSelf: 'center',
+    backgroundColor: '#5f162d',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    width: '65%',
+    alignItems: 'center',
+  },
+  primaryButtonDisabled: {
+    opacity: 0.7,
+  },
+  primaryButtonText: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: '800',
+    textAlign: 'center',
   },
 });

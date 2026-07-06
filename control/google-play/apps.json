@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Bloom Steward",
+    "packageName": "com.tompinataro.bloomsteward",
+    "repoPath": "/Users/tompinataro/My Projects/Bloom-Steward"
+  },
+  {
+    "name": "CD Valet",
+    "packageName": "com.tixpy.cdvalet",
+    "repoPath": "/Users/tompinataro/My Projects/CD-Valet"
+  },
+  {
+    "name": "DVD Valet",
+    "packageName": "com.tixpy.dvdvalet",
+    "repoPath": "/Users/tompinataro/My Projects/DVD-Valet"
+  },
+  {
+    "name": "Pool Steward",
+    "packageName": "com.tixpy.poolsteward",
+    "repoPath": "/Users/tompinataro/My Projects/Pool-Steward"
+  },
+  {
+    "name": "RouteMaster",
+    "packageName": "com.tixpy.routemaster",
+    "repoPath": "/Users/tompinataro/My Projects/RouteMaster"
+  },
+  {
+    "name": "Pull Tab Valet",
+    "packageName": "com.tixpy.pulltabvalet",
+    "repoPath": "/Users/tompinataro/My Projects/pull-tab_valet"
+  }
+]

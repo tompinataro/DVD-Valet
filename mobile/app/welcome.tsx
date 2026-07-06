@@ -1,0 +1,158 @@
+import { Link } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { BackHandler, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { useAuth } from '../src/auth';
+import { getDisplayProfile } from '../src/db';
+
+const DVD_VALET_LOGO = require('../assets/icon.png');
+
+export default function WelcomeScreen() {
+  const { session, startupError } = useAuth();
+  const [firstName, setFirstName] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getDisplayProfile()
+      .then((profile) => {
+        if (!cancelled) {
+          setFirstName(profile?.first_name ?? '');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFirstName('');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <Image source={DVD_VALET_LOGO} style={styles.logo} resizeMode="contain" />
+      <Text style={styles.greeting}>{firstName ? `Hi, ${firstName}!` : 'Hi!'}</Text>
+      <Text style={styles.h1}>{'Welcome to your\ncustom DVD library'}</Text>
+
+      <View style={styles.card}>
+        {startupError ? <Text style={styles.errorText}>{startupError}</Text> : null}
+        <View style={styles.actionRow}>
+          <Link href="/(tabs)/scan" asChild>
+            <Pressable style={styles.primaryButton}>
+              <Text style={styles.primaryButtonText}>{session ? 'Continue scanning' : 'Scan DVDs'}</Text>
+            </Pressable>
+          </Link>
+
+          <Link href="/(tabs)/library" asChild>
+            <Pressable style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonText}>Open Library</Text>
+            </Pressable>
+          </Link>
+
+          <Pressable onPress={() => BackHandler.exitApp()} style={styles.exitButton}>
+            <Text style={styles.exitButtonText}>Exit</Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0b0b0f',
+    paddingHorizontal: 20,
+    paddingTop: 82,
+  },
+  logo: {
+    alignSelf: 'center',
+    width: 132,
+    height: 132,
+    marginBottom: 58,
+  },
+  greeting: {
+    color: 'white',
+    fontSize: 34,
+    fontWeight: '800',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  h1: {
+    color: 'white',
+    fontSize: 32,
+    fontWeight: '800',
+    marginBottom: 38,
+    textAlign: 'center',
+  },
+  card: {
+    borderWidth: 1,
+    borderColor: '#242431',
+    borderRadius: 18,
+    padding: 18,
+    backgroundColor: '#12121a',
+  },
+  errorText: {
+    color: '#ff9a9a',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+  actionRow: {
+    alignItems: 'center',
+    gap: 20,
+  },
+  primaryButton: {
+    alignSelf: 'center',
+    backgroundColor: '#9f3654',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    minWidth: 150,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: 'white',
+    fontSize: 17,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  secondaryButton: {
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: '#8b2b45',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    minWidth: 150,
+    alignItems: 'center',
+    backgroundColor: '#762038',
+  },
+  secondaryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  exitButton: {
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: '#78223c',
+    borderRadius: 14,
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    minWidth: 150,
+    backgroundColor: '#5f162d',
+  },
+  exitButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textAlign: 'center',
+  },
+});

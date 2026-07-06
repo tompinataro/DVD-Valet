@@ -1,11 +1,20 @@
-import { useCallback } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
+import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Link, useFocusEffect } from 'expo-router';
 
 import { useQueuedUpcs } from '../../src/hooks/useQueuedUpcs';
 
+const SAMPLE_DVDS = [
+  { id: 'sample-1', title: 'The Grand Adventure', format: 'DVD', note: 'Example title preview' },
+  { id: 'sample-2', title: 'Classic Cinema Collection', format: 'Box Set', note: 'Example library card' },
+  { id: 'sample-3', title: 'Family Movie Night', format: 'Blu-ray', note: 'Appears here after scanning' },
+];
+
 export default function LibraryScreen() {
   const { items, loading, error, refresh } = useQueuedUpcs();
+  const [showIntro, setShowIntro] = useState(true);
+
+  const shouldShowEmptyState = useMemo(() => !loading && items.length === 0, [items.length, loading]);
 
   useFocusEffect(
     useCallback(() => {
@@ -15,15 +24,45 @@ export default function LibraryScreen() {
 
   return (
     <View style={styles.container}>
+      <Modal
+        transparent
+        animationType="fade"
+        visible={showIntro && shouldShowEmptyState}
+        onRequestClose={() => setShowIntro(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalEyebrow}>DVD Valet Tip</Text>
+            <Text style={styles.modalTitle}>Your DVD library contents will appear here</Text>
+            <Text style={styles.modalCopy}>
+              Add them with one tap from your camera on the Scan tab. No account or invitation is required to start building your collection.
+            </Text>
+            <View style={styles.modalActions}>
+              <Pressable onPress={() => setShowIntro(false)} style={styles.modalSecondaryButton}>
+                <Text style={styles.modalSecondaryButtonText}>Got it</Text>
+              </Pressable>
+              <Link href="/(tabs)/scan" asChild>
+                <Pressable style={styles.modalPrimaryButton}>
+                  <Text style={styles.modalPrimaryButtonText}>Open scanner</Text>
+                </Pressable>
+              </Link>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <View style={styles.headerRow}>
-        <Text style={styles.h1}>Queued UPCs</Text>
+        <Text style={styles.h1}>DVD Library</Text>
         <Pressable onPress={refresh} style={styles.refreshBtn}>
           <Text style={styles.refreshText}>Refresh</Text>
         </Pressable>
       </View>
 
-      {loading ? <Text style={styles.p}>Loading…</Text> : null}
-      {error ? <Text style={[styles.p, styles.error]}>Error: {String(error.message || error)}</Text> : null}
+      <Text style={styles.p}>
+        Saved UPCs appear here after they are scanned. This screen stays usable on a clean install even before any DVDs exist.
+      </Text>
+      {loading ? <Text style={styles.status}>Checking your local library…</Text> : null}
+      {error ? <Text style={[styles.status, styles.error]}>{error}</Text> : null}
 
       <FlatList
         data={items}
@@ -35,7 +74,34 @@ export default function LibraryScreen() {
             <Text style={styles.meta}>last scanned: {item.last_scanned_at.slice(0, 19).replace('T', ' ')}</Text>
           </View>
         )}
-        ListEmptyComponent={!loading ? <Text style={styles.p}>No scans yet.</Text> : null}
+        ListEmptyComponent={
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>Your library is empty</Text>
+            <Text style={styles.emptyCopy}>
+              Add your first DVD to start building your collection. You can open the scanner now, even if the device is offline and before saving any profile.
+            </Text>
+            <Link href="/(tabs)/scan" asChild>
+              <Pressable style={styles.primaryCta}>
+                <Text style={styles.primaryCtaText}>Add your first DVD</Text>
+              </Pressable>
+            </Link>
+
+            <View style={styles.sampleSection}>
+              <Text style={styles.sampleHeading}>Sample library preview</Text>
+              {SAMPLE_DVDS.map((sample) => (
+                <View key={sample.id} style={styles.sampleCard}>
+                  <View style={styles.sampleBadge}>
+                    <Text style={styles.sampleBadgeText}>Example</Text>
+                  </View>
+                  <Text style={styles.sampleTitle}>{sample.title}</Text>
+                  <Text style={styles.sampleMeta}>
+                    {sample.format} · {sample.note}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        }
       />
     </View>
   );
@@ -46,6 +112,66 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0b0b0f',
     padding: 16,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.66)',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+  },
+  modalCard: {
+    borderWidth: 1,
+    borderColor: '#2d2d3e',
+    borderRadius: 20,
+    padding: 20,
+    backgroundColor: '#12121a',
+  },
+  modalEyebrow: {
+    color: '#f7e7b1',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+  },
+  modalTitle: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+  modalCopy: {
+    color: '#c9c9d1',
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  modalActions: {
+    gap: 10,
+    marginTop: 18,
+  },
+  modalPrimaryButton: {
+    backgroundColor: '#5f162d',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalPrimaryButtonText: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  modalSecondaryButton: {
+    borderWidth: 1,
+    borderColor: '#2d2d3e',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: '#171722',
+  },
+  modalSecondaryButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
   },
   headerRow: {
     flexDirection: 'row',
@@ -61,10 +187,13 @@ const styles = StyleSheet.create({
   p: {
     color: '#c9c9d1',
     fontSize: 14,
-    marginBottom: 10,
+    marginBottom: 12,
+    lineHeight: 21,
   },
-  error: {
-    color: '#ff6b6b',
+  status: {
+    color: '#9a9ab0',
+    fontSize: 13,
+    marginBottom: 10,
   },
   refreshBtn: {
     borderWidth: 1,
@@ -81,6 +210,7 @@ const styles = StyleSheet.create({
   list: {
     gap: 10,
     paddingBottom: 24,
+    flexGrow: 1,
   },
   row: {
     borderWidth: 1,
@@ -98,5 +228,81 @@ const styles = StyleSheet.create({
   meta: {
     color: '#9a9ab0',
     fontSize: 12,
+  },
+  emptyCard: {
+    borderWidth: 1,
+    borderColor: '#242431',
+    borderRadius: 16,
+    padding: 18,
+    backgroundColor: '#12121a',
+    marginTop: 4,
+  },
+  emptyTitle: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+  emptyCopy: {
+    color: '#c9c9d1',
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 16,
+  },
+  primaryCta: {
+    backgroundColor: '#5f162d',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  primaryCtaText: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  sampleSection: {
+    marginTop: 18,
+    gap: 10,
+  },
+  sampleHeading: {
+    color: '#f7e7b1',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+  },
+  sampleCard: {
+    borderWidth: 1,
+    borderColor: '#2d2d3e',
+    borderRadius: 14,
+    padding: 14,
+    backgroundColor: '#171722',
+  },
+  sampleBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: '#2b2032',
+    marginBottom: 8,
+  },
+  sampleBadgeText: {
+    color: '#f7e7b1',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  sampleTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  sampleMeta: {
+    color: '#9a9ab0',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  error: {
+    color: '#ff9a9a',
   },
 });

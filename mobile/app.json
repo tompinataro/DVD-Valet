@@ -2,7 +2,7 @@
   "expo": {
     "name": "DVD Valet",
     "slug": "dvd-valet",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,19 +15,21 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tixpy.dvdvalet",
-      "buildNumber": "5",
+      "buildNumber": "18",
       "infoPlist": {
+        "NSCameraUsageDescription": "DVD Valet uses the camera to scan DVD and Blu-ray UPC barcodes so you can add titles to your personal library, for example while cataloging a new movie at home.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
+      "icon": "./assets/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#5f162d"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.tixpy.dvdvalet",
-      "versionCode": 10
+      "versionCode": 12
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -41,7 +43,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-font"
     ]
   }
 }

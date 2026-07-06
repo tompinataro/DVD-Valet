@@ -1,0 +1,8 @@
+Tixpy apps are designed to be simple, fast, and dependable.
+
+• Clean, task-first UI
+• Practical workflows
+• Built for real-world use
+
+Support
+If you need help, contact: support@tixpy.com
