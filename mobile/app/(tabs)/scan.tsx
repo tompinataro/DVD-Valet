@@ -16,7 +16,10 @@ import { useRouter } from 'expo-router';
 
 import { countQueuedUpcs, ensureSchema, upsertUpc } from '../../src/db';
 
-const DVD_BARCODE_TYPES: BarcodeType[] = ['upc_a', 'ean13', 'upc_e', 'ean8'];
+const DVD_BARCODE_TYPES: BarcodeType[] = Platform.select({
+  ios: ['ean13', 'upc_e', 'ean8'],
+  default: ['upc_a', 'ean13', 'upc_e', 'ean8'],
+});
 
 type ScanStatus =
   | { kind: 'idle' }
@@ -25,12 +28,25 @@ type ScanStatus =
   | { kind: 'saved'; upc: string }
   | { kind: 'error'; message: string };
 
+type ScannerDebugEvent = {
+  id: number;
+  label: string;
+  detail?: string;
+};
+
+const MAX_DEBUG_EVENTS = 7;
+
 function normalizeUpc(rawValue: string) {
   return String(rawValue || '').replace(/\D/g, '');
 }
 
 function isValidDvdUpc(value: string) {
   return /^(?:\d{8}|\d{12}|\d{13})$/.test(value);
+}
+
+function logScanner(message: string, data?: Record<string, unknown>) {
+  const suffix = data ? ` ${JSON.stringify(data)}` : '';
+  console.log(`[DVD Valet Scanner] ${message}${suffix}`);
 }
 
 export default function ScanScreen() {
@@ -41,9 +57,24 @@ export default function ScanScreen() {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualUpc, setManualUpc] = useState('');
   const [lastDetected, setLastDetected] = useState<string | null>(null);
+  const [debugEvents, setDebugEvents] = useState<ScannerDebugEvent[]>([]);
   const lastUpcRef = useRef<string | null>(null);
   const scanLockRef = useRef(false);
   const toastTimerRef = useRef<any>(null);
+  const debugEventIdRef = useRef(0);
+
+
+  function recordScannerLog(message: string, data?: Record<string, unknown>) {
+    logScanner(message, data);
+    const detail = data ? JSON.stringify(data) : undefined;
+    const nextEvent = {
+      id: debugEventIdRef.current + 1,
+      label: message,
+      detail,
+    };
+    debugEventIdRef.current = nextEvent.id;
+    setDebugEvents((current) => [nextEvent, ...current].slice(0, MAX_DEBUG_EVENTS));
+  }
 
   useEffect(() => {
     ensureSchema()
@@ -59,6 +90,7 @@ export default function ScanScreen() {
   }, []);
 
   function showSavedToast(upc: string) {
+    recordScannerLog('save complete', { upc });
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setStatus({ kind: 'saved', upc });
     toastTimerRef.current = setTimeout(() => {
@@ -68,13 +100,16 @@ export default function ScanScreen() {
   }
 
   async function saveScannedUpc(upc: string) {
-    if (scanLockRef.current) return;
-    if (lastUpcRef.current === upc) return;
+    if (scanLockRef.current) {
+      recordScannerLog('save skipped: scan lock active', { upc, status: status.kind });
+      return;
+    }
 
     scanLockRef.current = true;
     lastUpcRef.current = upc;
 
     try {
+      recordScannerLog('save started', { upc });
       setStatus({ kind: 'saving', upc });
       await upsertUpc(upc);
       const newCount = await countQueuedUpcs();
@@ -83,15 +118,22 @@ export default function ScanScreen() {
       showSavedToast(upc);
     } catch (e: any) {
       scanLockRef.current = false;
+      recordScannerLog('save failed', { upc, error: String(e?.message || e) });
       setStatus({ kind: 'error', message: String(e?.message || e) });
     }
   }
 
-  async function handleScannedValue(rawValue: string) {
+  async function handleScannedValue(rawValue: string, source: string) {
     const upc = normalizeUpc(rawValue);
-    if (!upc) return;
+    recordScannerLog('normalized barcode value', { source, rawValue, upc });
+
+    if (!upc) {
+      recordScannerLog('ignored empty barcode value', { source, rawValue });
+      return;
+    }
 
     if (!isValidDvdUpc(upc)) {
+      recordScannerLog('ignored invalid barcode value', { source, rawValue, upc });
       setLastDetected(`Ignored ${upc}`);
       return;
     }
@@ -100,11 +142,18 @@ export default function ScanScreen() {
   }
 
   async function handleBarcodeScanned(result: BarcodeScanningResult) {
-    if (scanLockRef.current) return;
-
     const raw = String(result.data || '').trim();
-    setLastDetected(`${result.type || 'unknown'}: ${raw || '(empty)'}`);
-    await handleScannedValue(raw);
+    const type = result.type || 'unknown';
+    recordScannerLog('native barcode callback', {
+      type,
+      data: raw,
+      raw: result.raw,
+      scanLocked: scanLockRef.current,
+      status: status.kind,
+    });
+    setLastDetected(`${type}: ${raw || '(empty)'}`);
+
+    await handleScannedValue(raw, `camera:${type}`);
   }
 
   function resetScanner() {
@@ -112,6 +161,7 @@ export default function ScanScreen() {
     lastUpcRef.current = null;
     scanLockRef.current = false;
     setLastDetected(null);
+    recordScannerLog('scanner reset');
     setStatus({ kind: 'scanning' });
   }
 
@@ -122,6 +172,7 @@ export default function ScanScreen() {
 
   async function submitManual() {
     const upc = normalizeUpc(manualUpc);
+    recordScannerLog('manual submit', { rawValue: manualUpc, upc });
     if (!isValidDvdUpc(upc)) {
       setStatus({ kind: 'error', message: 'Enter a valid UPC or EAN barcode.' });
       return;
@@ -156,6 +207,8 @@ export default function ScanScreen() {
             facing="back"
             autofocus="on"
             barcodeScannerSettings={{ barcodeTypes: DVD_BARCODE_TYPES }}
+            onCameraReady={() => recordScannerLog('camera ready', { barcodeTypes: DVD_BARCODE_TYPES })}
+            onMountError={(event) => recordScannerLog('camera mount error', { message: event.message })}
             onBarcodeScanned={handleBarcodeScanned}
           />
 
@@ -201,6 +254,20 @@ export default function ScanScreen() {
                   <Text style={styles.toastText}>Error: {status.message}</Text>
                 </View>
               ) : null}
+            </View>
+
+
+            <View style={styles.debugPanel}>
+              <Text style={styles.debugTitle}>Scanner Debug</Text>
+              {debugEvents.length ? (
+                debugEvents.map((event) => (
+                  <Text key={event.id} style={styles.debugLine} numberOfLines={2}>
+                    {event.label}{event.detail ? ` ${event.detail}` : ''}
+                  </Text>
+                ))
+              ) : (
+                <Text style={styles.debugLine}>Waiting for camera events...</Text>
+              )}
             </View>
 
             <Text style={styles.help}>
@@ -375,6 +442,27 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '800',
+  },
+
+  debugPanel: {
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(0,0,0,0.62)',
+    borderColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  debugTitle: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  debugLine: {
+    color: 'rgba(255,255,255,0.86)',
+    fontSize: 9,
+    lineHeight: 12,
   },
   help: {
     color: 'rgba(255,255,255,0.85)',
