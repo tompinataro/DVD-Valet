@@ -14,7 +14,15 @@ import type { BarcodeScanningResult, BarcodeType } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 
-import { countQueuedUpcs, ensureSchema, upsertUpc } from '../../src/db';
+import {
+  countQueuedUpcs,
+  ensureSchema,
+  markUpcLookupFailed,
+  markUpcLookupNotFound,
+  saveUpcMetadata,
+  upsertUpc,
+} from '../../src/db';
+import { lookupDvdByUpc } from '../../src/upcLookup';
 
 const DVD_BARCODE_TYPES: BarcodeType[] = Platform.select({
   ios: ['ean13', 'upc_e', 'ean8'],
@@ -25,7 +33,7 @@ type ScanStatus =
   | { kind: 'idle' }
   | { kind: 'scanning' }
   | { kind: 'saving'; upc: string }
-  | { kind: 'saved'; upc: string }
+  | { kind: 'saved'; upc: string; title?: string; lookupStatus: 'found' | 'not_found' | 'failed' }
   | { kind: 'error'; message: string };
 
 type ScannerDebugEvent = {
@@ -89,19 +97,22 @@ export default function ScanScreen() {
     };
   }, []);
 
-  function showSavedToast(upc: string) {
-    recordScannerLog('save complete', { upc });
+  function showSavedToast(
+    upc: string,
+    lookup: { title?: string; lookupStatus: 'found' | 'not_found' | 'failed' }
+  ) {
+    recordScannerLog('save complete', { upc, lookupStatus: lookup.lookupStatus, title: lookup.title });
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setStatus({ kind: 'saved', upc });
+    setStatus({ kind: 'saved', upc, ...lookup });
     toastTimerRef.current = setTimeout(() => {
       scanLockRef.current = false;
       setStatus({ kind: 'scanning' });
-    }, 1000);
+    }, 1800);
   }
 
   async function saveScannedUpc(upc: string) {
     if (scanLockRef.current) {
-      recordScannerLog('save skipped: scan lock active', { upc, status: status.kind });
+      recordScannerLog('duplicate callback ignored', { upc, status: status.kind });
       return;
     }
 
@@ -114,8 +125,34 @@ export default function ScanScreen() {
       await upsertUpc(upc);
       const newCount = await countQueuedUpcs();
       setQueuedCount(newCount);
+
+      let lookupResult: { title?: string; lookupStatus: 'found' | 'not_found' | 'failed' } = {
+        lookupStatus: 'not_found',
+      };
+      try {
+        recordScannerLog('title lookup started', { upc });
+        const metadata = await lookupDvdByUpc(upc);
+        if (metadata) {
+          await saveUpcMetadata(upc, metadata);
+          lookupResult = { title: metadata.title, lookupStatus: 'found' };
+          recordScannerLog('title lookup found', {
+            upc,
+            title: metadata.title,
+            source: metadata.source,
+          });
+        } else {
+          await markUpcLookupNotFound(upc);
+          recordScannerLog('title lookup not found', { upc });
+        }
+      } catch (lookupError: any) {
+        const message = String(lookupError?.message || lookupError);
+        lookupResult = { lookupStatus: 'failed' };
+        await markUpcLookupFailed(upc, message);
+        recordScannerLog('title lookup failed', { upc, error: message });
+      }
+
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      showSavedToast(upc);
+      showSavedToast(upc, lookupResult);
     } catch (e: any) {
       scanLockRef.current = false;
       recordScannerLog('save failed', { upc, error: String(e?.message || e) });
@@ -241,12 +278,29 @@ export default function ScanScreen() {
             <View style={styles.toastArea}>
               {status.kind === 'saved' ? (
                 <View style={styles.toast}>
-                  <Text style={styles.toastText}>Saved: {status.upc}</Text>
+                  <Text style={styles.toastText}>
+                    {status.lookupStatus === 'found' ? 'Title saved to Library' : 'UPC saved to Library'}
+                  </Text>
+                  {status.title ? <Text style={styles.toastTitleText}>{status.title}</Text> : null}
+                  <Text style={styles.toastSubText}>{status.upc}</Text>
+                  {status.lookupStatus !== 'found' ? (
+                    <Text style={styles.toastHintText}>
+                      {status.lookupStatus === 'failed' ? 'Title lookup failed. UPC is saved.' : 'No title match found yet.'}
+                    </Text>
+                  ) : null}
+                  <Pressable
+                    onPress={() => {
+                      router.replace('/(tabs)/library');
+                    }}
+                    style={styles.toastAction}
+                  >
+                    <Text style={styles.toastActionText}>View Library</Text>
+                  </Pressable>
                 </View>
               ) : null}
               {status.kind === 'saving' ? (
                 <View style={styles.toastMuted}>
-                  <Text style={styles.toastText}>Saving...</Text>
+                  <Text style={styles.toastText}>Saving and looking up title...</Text>
                 </View>
               ) : null}
               {status.kind === 'error' ? (
@@ -425,6 +479,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 8,
+    alignItems: 'center',
+    gap: 6,
   },
   toastMuted: {
     backgroundColor: 'rgba(0,0,0,0.55)',
@@ -439,6 +495,37 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   toastText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  toastSubText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  toastTitleText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '900',
+    maxWidth: 260,
+    textAlign: 'center',
+  },
+  toastHintText: {
+    color: 'rgba(255,255,255,0.86)',
+    fontSize: 11,
+    fontWeight: '700',
+    maxWidth: 260,
+    textAlign: 'center',
+  },
+  toastAction: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  toastActionText: {
     color: 'white',
     fontSize: 12,
     fontWeight: '800',

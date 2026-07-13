@@ -59,7 +59,7 @@ export default function LibraryScreen() {
       </View>
 
       <Text style={styles.p}>
-        Saved UPCs appear here after they are scanned. This screen stays usable on a clean install even before any DVDs exist.
+        Saved DVDs appear here after they are scanned. If title lookup is unavailable, DVD Valet keeps the UPC so it can be matched later.
       </Text>
       {loading ? <Text style={styles.status}>Checking your local library…</Text> : null}
       {error ? <Text style={[styles.status, styles.error]}>{error}</Text> : null}
@@ -68,12 +68,33 @@ export default function LibraryScreen() {
         data={items}
         keyExtractor={(it) => it.upc}
         contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.upc}>{item.upc}</Text>
-            <Text style={styles.meta}>last scanned: {item.last_scanned_at.slice(0, 19).replace('T', ' ')}</Text>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const hasTitle = Boolean(item.title);
+          const lookupLabel =
+            item.lookup_status === 'found'
+              ? [item.format, item.brand || item.lookup_source].filter(Boolean).join(' · ')
+              : item.lookup_status === 'failed'
+                ? 'Title lookup failed. UPC is saved.'
+                : item.lookup_status === 'not_found'
+                  ? 'No title match found yet.'
+                  : 'Title lookup pending.';
+
+          return (
+            <View style={styles.row}>
+              <Text style={hasTitle ? styles.itemTitle : styles.upcOnlyTitle}>
+                {item.title || 'UPC saved'}
+              </Text>
+              {item.subtitle ? (
+                <Text style={styles.description} numberOfLines={2}>
+                  {item.subtitle}
+                </Text>
+              ) : null}
+              <Text style={styles.upc}>UPC {item.upc}</Text>
+              {lookupLabel ? <Text style={styles.lookupMeta}>{lookupLabel}</Text> : null}
+              <Text style={styles.meta}>last scanned: {item.last_scanned_at.slice(0, 19).replace('T', ' ')}</Text>
+            </View>
+          );
+        }}
         ListEmptyComponent={
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>Your library is empty</Text>
@@ -220,8 +241,32 @@ const styles = StyleSheet.create({
     backgroundColor: '#12121a',
   },
   upc: {
+    color: '#c9c9d1',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  itemTitle: {
     color: 'white',
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  upcOnlyTitle: {
+    color: '#f7e7b1',
     fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  description: {
+    color: '#c9c9d1',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  lookupMeta: {
+    color: '#f7e7b1',
+    fontSize: 12,
     fontWeight: '700',
     marginBottom: 4,
   },

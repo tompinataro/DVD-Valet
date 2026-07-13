@@ -5,6 +5,26 @@ export type QueuedUpc = {
   upc: string;
   first_scanned_at: string;
   last_scanned_at: string;
+  title: string | null;
+  subtitle: string | null;
+  brand: string | null;
+  format: string | null;
+  image_url: string | null;
+  lookup_status: UpcLookupStatus;
+  lookup_source: string | null;
+  lookup_error: string | null;
+  metadata_updated_at: string | null;
+};
+
+export type UpcLookupStatus = 'pending' | 'found' | 'not_found' | 'failed';
+
+export type UpcMetadataInput = {
+  title: string;
+  subtitle?: string | null;
+  brand?: string | null;
+  format?: string | null;
+  imageUrl?: string | null;
+  source: string;
 };
 
 export type AuthSession = {
@@ -54,6 +74,26 @@ export async function ensureSchema() {
       updated_at TEXT NOT NULL
     );
   `);
+
+  await ensureUpcMetadataColumns(db);
+}
+
+async function ensureColumn(db: SQLite.SQLiteDatabase, tableName: string, columnName: string, definition: string) {
+  const columns = await db.getAllAsync<{ name: string }>(`PRAGMA table_info(${tableName});`);
+  if (columns.some((column) => column.name === columnName)) return;
+  await db.execAsync(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition};`);
+}
+
+async function ensureUpcMetadataColumns(db: SQLite.SQLiteDatabase) {
+  await ensureColumn(db, 'upc_queue', 'title', 'TEXT');
+  await ensureColumn(db, 'upc_queue', 'subtitle', 'TEXT');
+  await ensureColumn(db, 'upc_queue', 'brand', 'TEXT');
+  await ensureColumn(db, 'upc_queue', 'format', 'TEXT');
+  await ensureColumn(db, 'upc_queue', 'image_url', 'TEXT');
+  await ensureColumn(db, 'upc_queue', 'lookup_status', `TEXT NOT NULL DEFAULT 'pending'`);
+  await ensureColumn(db, 'upc_queue', 'lookup_source', 'TEXT');
+  await ensureColumn(db, 'upc_queue', 'lookup_error', 'TEXT');
+  await ensureColumn(db, 'upc_queue', 'metadata_updated_at', 'TEXT');
 }
 
 export async function upsertUpc(upcRaw: string) {
@@ -64,19 +104,81 @@ export async function upsertUpc(upcRaw: string) {
   const now = new Date().toISOString();
 
   await db.runAsync(
-    `INSERT INTO upc_queue (upc, first_scanned_at, last_scanned_at)
-     VALUES (?, ?, ?)
+    `INSERT INTO upc_queue (upc, first_scanned_at, last_scanned_at, lookup_status)
+     VALUES (?, ?, ?, 'pending')
      ON CONFLICT(upc) DO UPDATE SET last_scanned_at = excluded.last_scanned_at;`,
     [upc, now, now]
+  );
+}
+
+export async function saveUpcMetadata(upcRaw: string, metadata: UpcMetadataInput) {
+  const upc = upcRaw.trim();
+  if (!upc) return;
+
+  const db = await getDb();
+  await db.runAsync(
+    `UPDATE upc_queue
+     SET title = ?,
+       subtitle = ?,
+       brand = ?,
+       format = ?,
+       image_url = ?,
+       lookup_status = 'found',
+       lookup_source = ?,
+       lookup_error = NULL,
+       metadata_updated_at = ?
+     WHERE upc = ?;`,
+    [
+      metadata.title,
+      metadata.subtitle ?? null,
+      metadata.brand ?? null,
+      metadata.format ?? null,
+      metadata.imageUrl ?? null,
+      metadata.source,
+      new Date().toISOString(),
+      upc,
+    ]
+  );
+}
+
+export async function markUpcLookupNotFound(upcRaw: string) {
+  const upc = upcRaw.trim();
+  if (!upc) return;
+
+  const db = await getDb();
+  await db.runAsync(
+    `UPDATE upc_queue
+     SET lookup_status = 'not_found',
+       lookup_source = NULL,
+       lookup_error = NULL,
+       metadata_updated_at = ?
+     WHERE upc = ?;`,
+    [new Date().toISOString(), upc]
+  );
+}
+
+export async function markUpcLookupFailed(upcRaw: string, errorMessage: string) {
+  const upc = upcRaw.trim();
+  if (!upc) return;
+
+  const db = await getDb();
+  await db.runAsync(
+    `UPDATE upc_queue
+     SET lookup_status = 'failed',
+       lookup_error = ?,
+       metadata_updated_at = ?
+     WHERE upc = ?;`,
+    [errorMessage, new Date().toISOString(), upc]
   );
 }
 
 export async function listQueuedUpcs(): Promise<QueuedUpc[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<QueuedUpc>(
-    `SELECT upc, first_scanned_at, last_scanned_at
+    `SELECT upc, first_scanned_at, last_scanned_at, title, subtitle, brand, format, image_url,
+       lookup_status, lookup_source, lookup_error, metadata_updated_at
      FROM upc_queue
-     ORDER BY upc ASC;`
+     ORDER BY last_scanned_at DESC;`
   );
   return rows;
 }
