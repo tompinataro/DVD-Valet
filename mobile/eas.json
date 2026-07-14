@@ -23,7 +23,8 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.example.com"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {
