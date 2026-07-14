@@ -11,7 +11,7 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <Image source={DVD_VALET_LOGO} style={styles.logo} resizeMode="contain" />
-      <Text style={styles.h1}>Hi Mike, Welcome to your custom DVD Library.</Text>
+      <Text style={styles.h1}>{'Hi Mike,\nWelcome to\nyour custom\nDVD Library.'}</Text>
 
       <View style={styles.card}>
         {startupError ? <Text style={styles.errorText}>{startupError}</Text> : null}
