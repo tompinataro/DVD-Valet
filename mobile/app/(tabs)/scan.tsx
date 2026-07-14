@@ -36,14 +36,6 @@ type ScanStatus =
   | { kind: 'saved'; upc: string; title?: string; lookupStatus: 'found' | 'not_found' | 'failed' }
   | { kind: 'error'; message: string };
 
-type ScannerDebugEvent = {
-  id: number;
-  label: string;
-  detail?: string;
-};
-
-const MAX_DEBUG_EVENTS = 7;
-
 function normalizeUpc(rawValue: string) {
   return String(rawValue || '').replace(/\D/g, '');
 }
@@ -64,24 +56,13 @@ export default function ScanScreen() {
   const [queuedCount, setQueuedCount] = useState<number>(0);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualUpc, setManualUpc] = useState('');
-  const [lastDetected, setLastDetected] = useState<string | null>(null);
-  const [debugEvents, setDebugEvents] = useState<ScannerDebugEvent[]>([]);
   const lastUpcRef = useRef<string | null>(null);
   const scanLockRef = useRef(false);
   const toastTimerRef = useRef<any>(null);
-  const debugEventIdRef = useRef(0);
 
 
   function recordScannerLog(message: string, data?: Record<string, unknown>) {
     logScanner(message, data);
-    const detail = data ? JSON.stringify(data) : undefined;
-    const nextEvent = {
-      id: debugEventIdRef.current + 1,
-      label: message,
-      detail,
-    };
-    debugEventIdRef.current = nextEvent.id;
-    setDebugEvents((current) => [nextEvent, ...current].slice(0, MAX_DEBUG_EVENTS));
   }
 
   useEffect(() => {
@@ -171,7 +152,6 @@ export default function ScanScreen() {
 
     if (!isValidDvdUpc(upc)) {
       recordScannerLog('ignored invalid barcode value', { source, rawValue, upc });
-      setLastDetected(`Ignored ${upc}`);
       return;
     }
 
@@ -188,7 +168,6 @@ export default function ScanScreen() {
       scanLocked: scanLockRef.current,
       status: status.kind,
     });
-    setLastDetected(`${type}: ${raw || '(empty)'}`);
 
     await handleScannedValue(raw, `camera:${type}`);
   }
@@ -197,7 +176,6 @@ export default function ScanScreen() {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     lastUpcRef.current = null;
     scanLockRef.current = false;
-    setLastDetected(null);
     recordScannerLog('scanner reset');
     setStatus({ kind: 'scanning' });
   }
@@ -271,62 +249,44 @@ export default function ScanScreen() {
               </View>
             </View>
 
-            <View style={styles.frame} />
+            <View style={styles.scanArea}>
+              <View style={styles.frame} />
 
-            {lastDetected ? <Text style={styles.detectedText}>Detected {lastDetected}</Text> : null}
-
-            <View style={styles.toastArea}>
-              {status.kind === 'saved' ? (
-                <View style={styles.toast}>
-                  <Text style={styles.toastText}>
-                    {status.lookupStatus === 'found' ? 'Title saved to Library' : 'UPC saved to Library'}
-                  </Text>
-                  {status.title ? <Text style={styles.toastTitleText}>{status.title}</Text> : null}
-                  <Text style={styles.toastSubText}>{status.upc}</Text>
-                  {status.lookupStatus !== 'found' ? (
-                    <Text style={styles.toastHintText}>
-                      {status.lookupStatus === 'failed' ? 'Title lookup failed. UPC is saved.' : 'No title match found yet.'}
+              <View style={styles.toastArea}>
+                {status.kind === 'saved' ? (
+                  <View style={styles.toast}>
+                    <Text style={styles.toastText}>
+                      {status.lookupStatus === 'found' ? 'Title saved' : 'UPC saved'}
                     </Text>
-                  ) : null}
-                  <Pressable
-                    onPress={() => {
-                      router.replace('/(tabs)/library');
-                    }}
-                    style={styles.toastAction}
-                  >
-                    <Text style={styles.toastActionText}>View Library</Text>
-                  </Pressable>
-                </View>
-              ) : null}
-              {status.kind === 'saving' ? (
-                <View style={styles.toastMuted}>
-                  <Text style={styles.toastText}>Saving and looking up title...</Text>
-                </View>
-              ) : null}
-              {status.kind === 'error' ? (
-                <View style={styles.toastError}>
-                  <Text style={styles.toastText}>Error: {status.message}</Text>
-                </View>
-              ) : null}
+                    {status.title ? <Text style={styles.toastTitleText}>{status.title}</Text> : null}
+                    <Text style={styles.toastSubText}>{status.upc}</Text>
+                    {status.lookupStatus !== 'found' ? (
+                      <Text style={styles.toastHintText}>
+                        {status.lookupStatus === 'failed' ? 'Lookup failed' : 'No title match yet'}
+                      </Text>
+                    ) : null}
+                    <Pressable
+                      onPress={() => {
+                        router.replace('/(tabs)/library');
+                      }}
+                      style={styles.toastAction}
+                    >
+                      <Text style={styles.toastActionText}>Library</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+                {status.kind === 'saving' ? (
+                  <View style={styles.toastMuted}>
+                    <Text style={styles.toastText}>Saving...</Text>
+                  </View>
+                ) : null}
+                {status.kind === 'error' ? (
+                  <View style={styles.toastError}>
+                    <Text style={styles.toastText}>{status.message}</Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
-
-
-            <View style={styles.debugPanel}>
-              <Text style={styles.debugTitle}>Scanner Debug</Text>
-              {debugEvents.length ? (
-                debugEvents.map((event) => (
-                  <Text key={event.id} style={styles.debugLine} numberOfLines={2}>
-                    {event.label}{event.detail ? ` ${event.detail}` : ''}
-                  </Text>
-                ))
-              ) : (
-                <Text style={styles.debugLine}>Waiting for camera events...</Text>
-              )}
-            </View>
-
-            <Text style={styles.help}>
-              Aim the UPC inside the box to add titles to your library. Duplicates are ignored.
-            </Text>
           </View>
         </View>
       )}
@@ -417,7 +377,7 @@ const styles = StyleSheet.create({
     paddingTop: 48,
     paddingHorizontal: 14,
     paddingBottom: 18,
-    justifyContent: 'space-between',
+    gap: 18,
   },
   topBar: {
     flexDirection: 'row',
@@ -458,17 +418,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: 'rgba(0,0,0,0.05)',
   },
-  detectedText: {
-    alignSelf: 'center',
-    color: 'white',
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    borderRadius: 10,
-    fontSize: 12,
-    fontWeight: '800',
-    overflow: 'hidden',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    textAlign: 'center',
+  scanArea: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 28,
   },
   toastArea: {
     alignItems: 'center',
@@ -529,35 +482,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '800',
-  },
-
-  debugPanel: {
-    alignSelf: 'stretch',
-    backgroundColor: 'rgba(0,0,0,0.62)',
-    borderColor: 'rgba(255,255,255,0.25)',
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 3,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  debugTitle: {
-    color: 'white',
-    fontSize: 11,
-    fontWeight: '900',
-  },
-  debugLine: {
-    color: 'rgba(255,255,255,0.86)',
-    fontSize: 9,
-    lineHeight: 12,
-  },
-  help: {
-    color: 'rgba(255,255,255,0.85)',
-    textAlign: 'center',
-    fontSize: 12,
-    textShadowColor: 'rgba(0,0,0,0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
   },
   sheetKeyboard: {
     flex: 1,
