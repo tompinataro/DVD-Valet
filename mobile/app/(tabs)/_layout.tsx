@@ -1,12 +1,11 @@
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '../../src/auth';
 
 export default function TabsLayout() {
-  const router = useRouter();
-  const { ready, session, startupError } = useAuth();
+  const { ready, startupError } = useAuth();
 
   if (!ready) {
     return (
@@ -32,16 +31,6 @@ export default function TabsLayout() {
         tabBarStyle: { backgroundColor: '#12121a', borderTopColor: '#242431' },
         tabBarActiveTintColor: '#f7e7b1',
         tabBarInactiveTintColor: '#9a9ab0',
-        headerRight: () => (
-          <Pressable
-            onPress={() => {
-              router.push('/sign-in');
-            }}
-            style={styles.signOutButton}
-          >
-            <Text style={styles.signOutText}>{session ? 'Profile' : 'Optional Profile'}</Text>
-          </Pressable>
-        ),
       }}
     >
       <Tabs.Screen
@@ -85,18 +74,5 @@ const styles = StyleSheet.create({
     color: '#ff9a9a',
     fontSize: 13,
     lineHeight: 19,
-  },
-  signOutButton: {
-    borderWidth: 1,
-    borderColor: '#2d2d3e',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginRight: 6,
-  },
-  signOutText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '700',
   },
 });

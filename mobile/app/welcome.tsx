@@ -6,7 +6,7 @@ import { useAuth } from '../src/auth';
 const DVD_VALET_LOGO = require('../assets/icon.png');
 
 export default function WelcomeScreen() {
-  const { session, startupError } = useAuth();
+  const { startupError } = useAuth();
 
   return (
     <View style={styles.container}>
@@ -18,7 +18,7 @@ export default function WelcomeScreen() {
         <View style={styles.actionRow}>
           <Link href="/(tabs)/scan" asChild>
             <Pressable style={styles.primaryButton}>
-              <Text style={styles.primaryButtonText}>{session ? 'Continue scanning' : 'Scan DVDs'}</Text>
+              <Text style={styles.primaryButtonText}>Scan DVDs</Text>
             </Pressable>
           </Link>
 
