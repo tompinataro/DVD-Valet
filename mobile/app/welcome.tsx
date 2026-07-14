@@ -1,41 +1,17 @@
 import { Link } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { BackHandler, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '../src/auth';
-import { getDisplayProfile } from '../src/db';
 
 const DVD_VALET_LOGO = require('../assets/icon.png');
 
 export default function WelcomeScreen() {
   const { session, startupError } = useAuth();
-  const [firstName, setFirstName] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-
-    getDisplayProfile()
-      .then((profile) => {
-        if (!cancelled) {
-          setFirstName(profile?.first_name ?? '');
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setFirstName('');
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
     <View style={styles.container}>
       <Image source={DVD_VALET_LOGO} style={styles.logo} resizeMode="contain" />
-      <Text style={styles.greeting}>{firstName ? `Hi, ${firstName}!` : 'Hi!'}</Text>
-      <Text style={styles.h1}>{'Welcome to your\ncustom DVD library'}</Text>
+      <Text style={styles.h1}>Hi Mike, Welcome to your custom DVD Library.</Text>
 
       <View style={styles.card}>
         {startupError ? <Text style={styles.errorText}>{startupError}</Text> : null}
@@ -73,13 +49,6 @@ const styles = StyleSheet.create({
     width: 132,
     height: 132,
     marginBottom: 58,
-  },
-  greeting: {
-    color: 'white',
-    fontSize: 34,
-    fontWeight: '800',
-    marginBottom: 8,
-    textAlign: 'center',
   },
   h1: {
     color: 'white',

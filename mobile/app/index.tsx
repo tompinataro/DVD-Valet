@@ -1,53 +1,32 @@
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-
-import { saveFirstName } from '../src/db';
+import { Link } from 'expo-router';
+import { BackHandler, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 const DVD_VALET_LOGO = require('../assets/icon.png');
 
 export default function IndexScreen() {
-  const router = useRouter();
-  const [firstName, setFirstName] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleNext() {
-    setSubmitting(true);
-    setError(null);
-    try {
-      await saveFirstName(firstName);
-      router.replace('/welcome');
-    } catch (err: any) {
-      setError(String(err?.message || err));
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   return (
     <View style={styles.container}>
       <Image source={DVD_VALET_LOGO} style={styles.logo} resizeMode="contain" />
+      <Text style={styles.h1}>Hi Mike, Welcome to your custom DVD Library.</Text>
+
       <View style={styles.card}>
-        <TextInput
-          value={firstName}
-          onChangeText={setFirstName}
-          style={styles.input}
-          autoCapitalize="words"
-          autoCorrect={false}
-          returnKeyType="next"
-          placeholder="Add your first name here..."
-          placeholderTextColor="#707084"
-          onSubmitEditing={handleNext}
-        />
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        <Pressable
-          onPress={handleNext}
-          style={[styles.primaryButton, submitting && styles.primaryButtonDisabled]}
-          disabled={submitting}
-        >
-          <Text style={styles.primaryButtonText}>{submitting ? 'Saving...' : 'Next'}</Text>
-        </Pressable>
+        <View style={styles.actionRow}>
+          <Link href="/(tabs)/scan" asChild>
+            <Pressable style={styles.primaryButton}>
+              <Text style={styles.primaryButtonText}>Scan DVDs</Text>
+            </Pressable>
+          </Link>
+
+          <Link href="/(tabs)/library" asChild>
+            <Pressable style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonText}>Open Library</Text>
+            </Pressable>
+          </Link>
+
+          <Pressable onPress={() => BackHandler.exitApp()} style={styles.exitButton}>
+            <Text style={styles.exitButtonText}>Exit</Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -58,15 +37,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0b0b0f',
     paddingHorizontal: 20,
-    paddingTop: 56,
-    justifyContent: 'center',
+    paddingTop: 82,
   },
   logo: {
     alignSelf: 'center',
-    position: 'absolute',
-    top: 84,
-    width: 172,
-    height: 172,
+    width: 132,
+    height: 132,
+    marginBottom: 58,
+  },
+  h1: {
+    color: 'white',
+    fontSize: 32,
+    fontWeight: '800',
+    marginBottom: 38,
+    textAlign: 'center',
   },
   card: {
     borderWidth: 1,
@@ -75,39 +59,58 @@ const styles = StyleSheet.create({
     padding: 18,
     backgroundColor: '#12121a',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#2d2d3e',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 13,
-    color: 'white',
-    backgroundColor: '#171722',
-    fontSize: 16,
-    marginBottom: 12,
-  },
-  errorText: {
-    color: '#ff9a9a',
-    fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 12,
+  actionRow: {
+    alignItems: 'center',
+    gap: 20,
   },
   primaryButton: {
     alignSelf: 'center',
-    backgroundColor: '#5f162d',
+    backgroundColor: '#9f3654',
     borderRadius: 14,
     paddingVertical: 14,
-    paddingHorizontal: 14,
-    width: '65%',
+    paddingHorizontal: 28,
+    minWidth: 150,
     alignItems: 'center',
-  },
-  primaryButtonDisabled: {
-    opacity: 0.7,
   },
   primaryButtonText: {
     color: 'white',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '800',
+    textAlign: 'center',
+  },
+  secondaryButton: {
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: '#8b2b45',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    minWidth: 150,
+    alignItems: 'center',
+    backgroundColor: '#762038',
+  },
+  secondaryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  exitButton: {
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: '#78223c',
+    borderRadius: 14,
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    minWidth: 150,
+    backgroundColor: '#5f162d',
+  },
+  exitButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0.8,
     textAlign: 'center',
   },
 });
