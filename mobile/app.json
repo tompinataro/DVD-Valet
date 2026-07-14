@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tixpy.dvdvalet",
-      "buildNumber": "25",
+      "buildNumber": "26",
       "infoPlist": {
         "NSCameraUsageDescription": "DVD Valet uses the camera to scan DVD and Blu-ray UPC barcodes so you can add titles to your personal library, for example while cataloging a new movie at home.",
         "ITSAppUsesNonExemptEncryption": false
