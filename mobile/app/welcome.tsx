@@ -1,7 +1,8 @@
 import { Link } from 'expo-router';
-import { BackHandler, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '../src/auth';
+import { confirmExitWithBackupReminder } from '../src/exitReminder';
 
 const DVD_VALET_LOGO = require('../assets/icon.png');
 
@@ -28,7 +29,7 @@ export default function WelcomeScreen() {
             </Pressable>
           </Link>
 
-          <Pressable onPress={() => BackHandler.exitApp()} style={styles.exitButton}>
+          <Pressable onPress={confirmExitWithBackupReminder} style={styles.exitButton}>
             <Text style={styles.exitButtonText}>Exit</Text>
           </Pressable>
         </View>
