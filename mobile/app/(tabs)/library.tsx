@@ -1,7 +1,18 @@
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Animated,
+  FlatList,
+  Modal,
+  PanResponder,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Link, useFocusEffect } from 'expo-router';
 
+import { deleteQueuedUpc, type QueuedUpc } from '../../src/db';
 import { useQueuedUpcs } from '../../src/hooks/useQueuedUpcs';
 
 const SAMPLE_DVDS = [
@@ -15,6 +26,25 @@ export default function LibraryScreen() {
   const [showIntro, setShowIntro] = useState(true);
 
   const shouldShowEmptyState = useMemo(() => !loading && items.length === 0, [items.length, loading]);
+
+  function confirmDelete(item: QueuedUpc) {
+    const name = item.title || `UPC ${item.upc}`;
+    Alert.alert(
+      'Delete DVD?',
+      `Remove ${name} from Mike's DVD Library?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            void deleteQueuedUpc(item.upc).then(refresh);
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -69,30 +99,11 @@ export default function LibraryScreen() {
         keyExtractor={(it) => it.upc}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => {
-          const hasTitle = Boolean(item.title);
-          const lookupLabel =
-            item.lookup_status === 'found'
-              ? [item.format, item.brand || item.lookup_source].filter(Boolean).join(' · ')
-              : item.lookup_status === 'failed'
-                ? 'Title lookup failed. UPC is saved.'
-                : item.lookup_status === 'not_found'
-                  ? 'No title match found yet.'
-                  : 'Title lookup pending.';
-
           return (
-            <View style={styles.row}>
-              <Text style={hasTitle ? styles.itemTitle : styles.upcOnlyTitle}>
-                {item.title || 'UPC saved'}
-              </Text>
-              {item.subtitle ? (
-                <Text style={styles.description} numberOfLines={2}>
-                  {item.subtitle}
-                </Text>
-              ) : null}
-              <Text style={styles.upc}>UPC {item.upc}</Text>
-              {lookupLabel ? <Text style={styles.lookupMeta}>{lookupLabel}</Text> : null}
-              <Text style={styles.meta}>last scanned: {item.last_scanned_at.slice(0, 19).replace('T', ' ')}</Text>
-            </View>
+            <LibraryRow
+              item={item}
+              onDelete={() => confirmDelete(item)}
+            />
           );
         }}
         ListEmptyComponent={
@@ -124,6 +135,73 @@ export default function LibraryScreen() {
           </View>
         }
       />
+    </View>
+  );
+}
+
+function LibraryRow({ item, onDelete }: { item: QueuedUpc; onDelete: () => void }) {
+  const translateX = useMemo(() => new Animated.Value(0), []);
+  const hasTitle = Boolean(item.title);
+  const lookupLabel =
+    item.lookup_status === 'found'
+      ? [item.format, item.brand || item.lookup_source].filter(Boolean).join(' · ')
+      : item.lookup_status === 'failed'
+        ? 'Title lookup failed. UPC is saved.'
+        : item.lookup_status === 'not_found'
+          ? 'No title match found yet.'
+          : 'Title lookup pending.';
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 12 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+        onPanResponderMove: (_, gesture) => {
+          const nextValue = Math.max(-96, Math.min(0, gesture.dx));
+          translateX.setValue(nextValue);
+        },
+        onPanResponderRelease: (_, gesture) => {
+          Animated.spring(translateX, {
+            toValue: gesture.dx < -56 ? -96 : 0,
+            useNativeDriver: true,
+          }).start();
+        },
+      }),
+    [translateX]
+  );
+
+  function closeAndDelete() {
+    Animated.spring(translateX, {
+      toValue: 0,
+      useNativeDriver: true,
+    }).start(onDelete);
+  }
+
+  return (
+    <View style={styles.swipeRow}>
+      <Pressable onPress={closeAndDelete} style={styles.deleteRail}>
+        <Text style={styles.deleteText}>Delete</Text>
+      </Pressable>
+      <Animated.View
+        {...panResponder.panHandlers}
+        style={[
+          styles.row,
+          {
+            transform: [{ translateX }],
+          },
+        ]}
+      >
+        <Text style={hasTitle ? styles.itemTitle : styles.upcOnlyTitle}>
+          {item.title || 'UPC saved'}
+        </Text>
+        {item.subtitle ? (
+          <Text style={styles.description} numberOfLines={2}>
+            {item.subtitle}
+          </Text>
+        ) : null}
+        <Text style={styles.upc}>UPC {item.upc}</Text>
+        {lookupLabel ? <Text style={styles.lookupMeta}>{lookupLabel}</Text> : null}
+        <Text style={styles.meta}>last scanned: {item.last_scanned_at.slice(0, 19).replace('T', ' ')}</Text>
+      </Animated.View>
     </View>
   );
 }
@@ -232,6 +310,22 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingBottom: 24,
     flexGrow: 1,
+  },
+  swipeRow: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  deleteRail: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'flex-end',
+    backgroundColor: '#8f1d2f',
+    justifyContent: 'center',
+    paddingRight: 20,
+  },
+  deleteText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '900',
   },
   row: {
     borderWidth: 1,

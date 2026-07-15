@@ -183,6 +183,14 @@ export async function listQueuedUpcs(): Promise<QueuedUpc[]> {
   return rows;
 }
 
+export async function deleteQueuedUpc(upcRaw: string) {
+  const upc = upcRaw.trim();
+  if (!upc) return;
+
+  const db = await getDb();
+  await db.runAsync(`DELETE FROM upc_queue WHERE upc = ?;`, [upc]);
+}
+
 export async function countQueuedUpcs(): Promise<number> {
   const db = await getDb();
   const row = await db.getFirstAsync<{ count: number }>(
