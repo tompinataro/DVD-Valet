@@ -12,7 +12,7 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <Image source={DVD_VALET_LOGO} style={styles.logo} resizeMode="contain" />
-      <Text style={styles.h1}>{'Hi Mike,\nWelcome to\nyour custom\nDVD Library.\nYour very own Tixpy app! 😎'}</Text>
+      <Text style={styles.h1}>{'Hi Mike,\nWelcome to\nyour custom\nDVD Library.\nYour very own\nTixpy app! 😎'}</Text>
 
       <View style={styles.card}>
         {startupError ? <Text style={styles.errorText}>{startupError}</Text> : null}
