@@ -1,20 +1,13 @@
-import { Alert, BackHandler } from 'react-native';
+import { Alert } from 'react-native';
 
 const BACKUP_REMINDER =
-  'Be sure to back up your phone to protect the newly scanned DVDs added to your library.';
+  'Be sure to back up your phone to protect the newly scanned DVDs added to your library. Use the app switcher when you are ready to close DVD Valet.';
 
 export function confirmExitWithBackupReminder() {
   Alert.alert(
     'Backup Reminder',
     BACKUP_REMINDER,
-    [
-      { text: 'Stay', style: 'cancel' },
-      {
-        text: 'Exit',
-        style: 'destructive',
-        onPress: () => BackHandler.exitApp(),
-      },
-    ],
+    [{ text: 'Got it', style: 'default' }],
     { cancelable: true }
   );
 }
