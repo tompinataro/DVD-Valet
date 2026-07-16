@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>DVD Valet</title>
+  <link rel="icon" href="./icon.png">
+  <link rel="apple-touch-icon" href="./icon.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero" id="home-view">
+      <img class="app-icon" src="./icon.png" alt="DVD Valet icon">
+      <h1>Hi Mike,<br>Welcome to<br>your custom<br>DVD Library.</h1>
+      <p class="tagline">Your very own<br>Tixpy app! 😎</p>
+      <nav class="hero-actions" aria-label="Main actions">
+        <button class="primary" data-view="scan-view">Scan DVDs</button>
+        <button class="secondary" data-view="library-view">Open Library</button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="panel hidden" id="scan-view" aria-labelledby="scan-title">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Scan</p>
+            <h2 id="scan-title">Add DVDs</h2>
+          </div>
+          <button class="ghost" data-view="home-view">Home</button>
+        </div>
+
+        <div class="camera-card">
+          <video id="camera-preview" playsinline muted></video>
+          <div class="scan-frame" aria-hidden="true"></div>
+          <p id="camera-status">Camera scanner uses this browser's barcode support when available.</p>
+        </div>
+
+        <div class="action-grid">
+          <button class="primary" id="start-camera">Start Camera</button>
+          <button class="secondary" id="stop-camera">Stop Camera</button>
+        </div>
+
+        <form class="manual-form" id="manual-form">
+          <label for="manual-upc">Manual UPC</label>
+          <div class="manual-row">
+            <input id="manual-upc" inputmode="numeric" autocomplete="off" placeholder="UPC or EAN">
+            <button class="primary" type="submit">Save</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel hidden" id="library-view" aria-labelledby="library-title">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Library</p>
+            <h2 id="library-title">DVD Library</h2>
+          </div>
+          <button class="ghost" data-view="home-view">Home</button>
+        </div>
+
+        <div class="library-actions">
+          <button class="primary" id="export-csv">Export CSV</button>
+          <button class="secondary" id="refresh-library">Refresh</button>
+        </div>
+
+        <p class="helper">Saved DVDs stay in this browser on this device. Export CSV to keep a backup.</p>
+        <div class="library-list" id="library-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="dvd-row-template">
+    <article class="dvd-row">
+      <div class="delete-rail">
+        <button type="button">Delete</button>
+      </div>
+      <div class="dvd-card">
+        <h3></h3>
+        <p class="dvd-upc"></p>
+        <p class="dvd-meta"></p>
+      </div>
+    </article>
+  </template>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
