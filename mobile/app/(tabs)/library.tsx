@@ -6,6 +6,7 @@ import {
   Modal,
   PanResponder,
   Pressable,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -20,6 +21,40 @@ const SAMPLE_DVDS = [
   { id: 'sample-2', title: 'Classic Cinema Collection', format: 'Box Set', note: 'Example library card' },
   { id: 'sample-3', title: 'Family Movie Night', format: 'Blu-ray', note: 'Appears here after scanning' },
 ];
+
+const CSV_HEADERS = [
+  'title',
+  'upc',
+  'format',
+  'brand',
+  'lookup_status',
+  'lookup_source',
+  'last_scanned_at',
+  'first_scanned_at',
+];
+
+function toCsvCell(value: string | null | undefined) {
+  const text = String(value ?? '');
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function buildLibraryCsv(items: QueuedUpc[]) {
+  const rows = items.map((item) => [
+    item.title || '',
+    item.upc,
+    item.format || '',
+    item.brand || '',
+    item.lookup_status,
+    item.lookup_source || '',
+    item.last_scanned_at,
+    item.first_scanned_at,
+  ]);
+
+  return [
+    CSV_HEADERS.map(toCsvCell).join(','),
+    ...rows.map((row) => row.map(toCsvCell).join(',')),
+  ].join('\n');
+}
 
 export default function LibraryScreen() {
   const { items, loading, error, refresh } = useQueuedUpcs();
@@ -44,6 +79,19 @@ export default function LibraryScreen() {
       ],
       { cancelable: true }
     );
+  }
+
+  async function exportCsv() {
+    if (!items.length) {
+      Alert.alert('Nothing to export', 'Scan DVDs first, then export Mike\'s library as CSV.');
+      return;
+    }
+
+    const csv = buildLibraryCsv(items);
+    await Share.share({
+      title: 'DVD Valet Library CSV',
+      message: csv,
+    });
   }
 
   useFocusEffect(
@@ -83,9 +131,14 @@ export default function LibraryScreen() {
 
       <View style={styles.headerRow}>
         <Text style={styles.h1}>DVD Library</Text>
-        <Pressable onPress={refresh} style={styles.refreshBtn}>
-          <Text style={styles.refreshText}>Refresh</Text>
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable onPress={exportCsv} style={styles.headerBtn}>
+            <Text style={styles.headerBtnText}>Export CSV</Text>
+          </Pressable>
+          <Pressable onPress={refresh} style={styles.headerBtn}>
+            <Text style={styles.headerBtnText}>Refresh</Text>
+          </Pressable>
+        </View>
       </View>
 
       <Text style={styles.p}>
@@ -294,14 +347,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 10,
   },
-  refreshBtn: {
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerBtn: {
     borderWidth: 1,
     borderColor: '#2d2d3e',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
   },
-  refreshText: {
+  headerBtnText: {
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
