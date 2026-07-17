@@ -1,4 +1,32 @@
 const STORAGE_KEY = 'dvd-valet-web-library-v1';
+const SEED_KEY = 'dvd-valet-web-library-seeded-v1';
+const DAY_MS = 24 * 60 * 60 * 1000;
+const STARTER_DVDS = [
+  {
+    upc: '085393894825',
+    title: "Ocean's Eleven",
+    format: 'DVD',
+    brand: 'Warner Home Video',
+  },
+  {
+    upc: '085391163922',
+    title: 'The Matrix',
+    format: 'DVD',
+    brand: 'Warner Home Video',
+  },
+  {
+    upc: '786936233711',
+    title: 'Finding Nemo',
+    format: 'DVD',
+    brand: 'Pixar / Disney',
+  },
+  {
+    upc: '794043554529',
+    title: 'The Lord of the Rings: The Fellowship of the Ring',
+    format: 'DVD',
+    brand: 'New Line Home Video',
+  },
+];
 const KNOWN_DVDS = {
   '085393894825': {
     title: "Ocean's Eleven",
@@ -51,11 +79,32 @@ function showView(id) {
 
 function loadLibrary() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    return Array.isArray(saved) ? saved : [];
+    const savedRaw = localStorage.getItem(STORAGE_KEY);
+    const seeded = localStorage.getItem(SEED_KEY) === 'true';
+    const saved = savedRaw ? JSON.parse(savedRaw) : [];
+    if (Array.isArray(saved) && (saved.length > 0 || seeded)) return saved;
+
+    const starterDvds = makeStarterDvds();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(starterDvds));
+    localStorage.setItem(SEED_KEY, 'true');
+    return starterDvds;
   } catch {
-    return [];
+    return makeStarterDvds();
   }
+}
+
+function makeStarterDvds() {
+  const now = Date.now();
+  return STARTER_DVDS.map((dvd, index) => {
+    const scannedAt = new Date(now - (index + 1) * DAY_MS).toISOString();
+    return {
+      ...dvd,
+      lookup_status: 'found',
+      lookup_source: 'dvd-valet-starter',
+      first_scanned_at: scannedAt,
+      last_scanned_at: scannedAt,
+    };
+  });
 }
 
 function persistLibrary() {

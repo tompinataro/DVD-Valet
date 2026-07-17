@@ -39,6 +39,39 @@ export type DisplayProfile = {
 };
 
 const DB_NAME = 'dvd_valet.db';
+const STARTER_DVDS_SEEDED_FLAG = 'starter_dvds_seeded';
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const STARTER_DVDS = [
+  {
+    upc: '085393894825',
+    title: "Ocean's Eleven",
+    brand: 'Warner Home Video',
+    format: 'DVD',
+    offsetDays: 1,
+  },
+  {
+    upc: '085391163922',
+    title: 'The Matrix',
+    brand: 'Warner Home Video',
+    format: 'DVD',
+    offsetDays: 2,
+  },
+  {
+    upc: '786936233711',
+    title: 'Finding Nemo',
+    brand: 'Pixar / Disney',
+    format: 'DVD',
+    offsetDays: 3,
+  },
+  {
+    upc: '794043554529',
+    title: 'The Lord of the Rings: The Fellowship of the Ring',
+    brand: 'New Line Home Video',
+    format: 'DVD',
+    offsetDays: 4,
+  },
+];
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -73,9 +106,14 @@ export async function ensureSchema() {
       first_name TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS app_flags (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
   `);
 
   await ensureUpcMetadataColumns(db);
+  await seedStarterDvds(db);
 }
 
 async function ensureColumn(db: SQLite.SQLiteDatabase, tableName: string, columnName: string, definition: string) {
@@ -94,6 +132,44 @@ async function ensureUpcMetadataColumns(db: SQLite.SQLiteDatabase) {
   await ensureColumn(db, 'upc_queue', 'lookup_source', 'TEXT');
   await ensureColumn(db, 'upc_queue', 'lookup_error', 'TEXT');
   await ensureColumn(db, 'upc_queue', 'metadata_updated_at', 'TEXT');
+}
+
+async function setAppFlag(db: SQLite.SQLiteDatabase, key: string, value = 'true') {
+  await db.runAsync(
+    `INSERT INTO app_flags (key, value)
+     VALUES (?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value;`,
+    [key, value]
+  );
+}
+
+async function seedStarterDvds(db: SQLite.SQLiteDatabase) {
+  const seeded = await db.getFirstAsync<{ value: string }>(
+    `SELECT value FROM app_flags WHERE key = ?;`,
+    [STARTER_DVDS_SEEDED_FLAG]
+  );
+  if (seeded) return;
+
+  const row = await db.getFirstAsync<{ count: number }>(`SELECT COUNT(*) as count FROM upc_queue;`);
+  if ((row?.count ?? 0) > 0) {
+    await setAppFlag(db, STARTER_DVDS_SEEDED_FLAG);
+    return;
+  }
+
+  const now = Date.now();
+  for (const dvd of STARTER_DVDS) {
+    const scannedAt = new Date(now - dvd.offsetDays * DAY_MS).toISOString();
+    await db.runAsync(
+      `INSERT OR IGNORE INTO upc_queue (
+        upc, first_scanned_at, last_scanned_at, title, brand, format,
+        lookup_status, lookup_source, lookup_error, metadata_updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, 'found', 'dvd-valet-starter', NULL, ?);`,
+      [dvd.upc, scannedAt, scannedAt, dvd.title, dvd.brand, dvd.format, scannedAt]
+    );
+  }
+
+  await setAppFlag(db, STARTER_DVDS_SEEDED_FLAG);
 }
 
 export async function upsertUpc(upcRaw: string) {
