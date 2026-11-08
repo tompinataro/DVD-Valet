@@ -208,7 +208,7 @@ export default function ScanScreen() {
             Camera access is used only to scan DVD UPC barcodes and add those titles to your personal library. Manual entry is available if scanning is unavailable.
           </Text>
           <Pressable onPress={requestPermission} style={styles.primaryBtn}>
-            <Text style={styles.primaryText}>Enable Camera</Text>
+            <Text style={styles.primaryText}>Continue</Text>
           </Pressable>
           <Pressable onPress={openManual} style={styles.secondaryBtn}>
             <Text style={styles.secondaryText}>Enter UPC Manually</Text>
